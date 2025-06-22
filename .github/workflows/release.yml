@@ -27,11 +27,27 @@ jobs:
         run: flutter build apk --debug
       - name: Archive source
         run: git archive -o source-v${{ steps.version.outputs.VERSION }}.zip HEAD
+      - name: Generate release notes
+        run: |
+          TAG=v${{ steps.version.outputs.VERSION }}
+          REPO=${{ github.repository }}
+          URL="https://github.com/$REPO/releases/download/$TAG"
+          cat <<EOF > release_notes.md
+          ## Downloads
+
+          | Asset | Copy Link |
+          | ----- | --------- |
+          | [app-release.aab]($URL/app-release.aab) | <clipboard-copy value="$URL/app-release.aab">Copy</clipboard-copy> |
+          | [app-release.apk]($URL/app-release.apk) | <clipboard-copy value="$URL/app-release.apk">Copy</clipboard-copy> |
+          | [app-debug.apk]($URL/app-debug.apk) | <clipboard-copy value="$URL/app-debug.apk">Copy</clipboard-copy> |
+          | [source-$TAG.zip]($URL/source-$TAG.zip) | <clipboard-copy value="$URL/source-$TAG.zip">Copy</clipboard-copy> |
+          EOF
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{ steps.version.outputs.VERSION }}"
           name: "v${{ steps.version.outputs.VERSION }}"
+          body_path: release_notes.md
           files: |
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/apk/release/app-release.apk
