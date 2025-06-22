@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install dependencies
+        run: flutter pub get
+      - id: version
+        run: echo "VERSION=$(./scripts/get_version.sh)" >> "$GITHUB_OUTPUT"
+      - name: Build AppBundle
+        run: flutter build appbundle --release
+      - name: Build release APK
+        run: flutter build apk --release
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - name: Archive source
+        run: git archive -o source-v${{ steps.version.outputs.VERSION }}.zip HEAD
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ steps.version.outputs.VERSION }}"
+          name: "v${{ steps.version.outputs.VERSION }}"
+          files: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/apk/release/app-release.apk
+            build/app/outputs/apk/debug/app-debug.apk
+            source-v${{ steps.version.outputs.VERSION }}.zip
